@@ -4,6 +4,9 @@
 #include <CL/opencl.h>
 
 #define NUM_OF_BUFFERS 2
+#define NUM_OF_PIXELS 64
+
+
 cl_ulong time_start, time_end;
 double total_time;
 #define CREATOR "RPFELGUEIRAS"
@@ -16,11 +19,14 @@ void error(cl_int err, char* actionName, ...);
 void Cleanup(cl_context context, cl_command_queue commandQueue,
 	cl_program program, cl_kernel kernel);
 
+
 typedef struct {
-	unsigned char red, green, blue;
+	unsigned char red, green, blue,alpha;
 } PPMPixel;
 
 typedef struct {
 	int x, y;
-	PPMPixel *data;
+	PPMPixel *data[NUM_OF_PIXELS];
 } PPMImage;
+
+int fillDataBuffer(PPMPixel *data, cl_uchar *buffer, cl_int len);

@@ -179,3 +179,29 @@ void Cleanup(cl_context context, cl_command_queue commandQueue, cl_program progr
 		clReleaseContext(context);
 
 }
+
+int fillDataBuffer(PPMPixel *data, cl_uchar *buffer, cl_int len)
+{
+	int i, j = 0;
+
+	for (i = sizeof(data->red) - 1; i >= 0 && j < len; i--, j++) {
+		buffer[j] = (char)(data->red >> i);
+	}
+	for (i = sizeof(data->green) - 1; i >= 0 && j < len; i--, j++) {
+		buffer[j] = (char)(data->green >> i);
+	}
+	for (i = sizeof(data->blue) - 1; i >= 0 && j < len; i--, j++) {
+		buffer[j] = (char)(data->blue >> i);
+	}
+	for (i = sizeof(data->alpha) - 1; i >= 0 && j < len; i--, j++) {
+		buffer[j] = (char)(data->alpha >> i);
+	}
+
+	if (j >= len) {
+		/* Error!  The buffer wasn't big enough. */
+		return 0;
+	}
+	else {
+		return 1;
+	}
+}

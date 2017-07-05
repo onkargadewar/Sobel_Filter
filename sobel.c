@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 	char *value;
 	double run_time;
 	size_t valueSize, length;
-	FILE *fptr,*inFile;
+	FILE *fptr, *inFile;
 	const char *filename = "F:\\workspace\\Sobel_filter\\Sobel_filter\\sobel.cl";
 	const char *imagename = "C:\\Users\\USER\\Pictures\\in.ppm";
 	const char *src;
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 	cl_mem buffers[2];
 	cl_event keventA, keventB;
 	int c, rgb_comp_color;
-
+	int  index = 0;
 	// get all platforms
 	clGetPlatformIDs(0, NULL, &platformCount);
 	platforms = malloc(sizeof(cl_platform_id) * platformCount);
@@ -77,12 +77,11 @@ int main(int argc, char **argv)
 
 	for (int i = 0; i < NUM_OF_BUFFERS; i++)
 	{
-		buffers[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int) * 64 , NULL, &errNum);//i will have to remove 64 which is hardcoded currently
+		buffers[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(PPMPixel) * NUM_OF_PIXELS, NULL, &errNum);
 		error(errNum, "clCreateBuffer");
 	}
 
-
-	//open the file for reading
+	//open the kernel file for reading
 	fptr = fopen(filename, "rb");//As we are opening non-text files
 	if (fptr == NULL)
 	{
@@ -121,7 +120,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Invalid image format (must be 'P3')\n");
 		exit(1);
 	}
-	
+
 	//alloc memory form image
 	img = (PPMImage *)malloc(sizeof(PPMImage));
 	if (!img) {
@@ -149,19 +148,27 @@ int main(int argc, char **argv)
 
 	while (fgetc(inFile) != '\n');
 	//memory allocation for pixel data
-	img->data = (PPMPixel*)malloc(img->x * img->y * sizeof(PPMPixel));
-
+	//img->data = (PPMPixel*)malloc(img->x * img->y * sizeof(PPMPixel));
+	
+	for (int i=0;i<NUM_OF_PIXELS;i++)
+	{
+		img->data[i] = (PPMPixel*)malloc(sizeof(PPMPixel));
+	}
+	
 	if (!img) {
 		fprintf(stderr, "Unable to allocate memory\n");
 		exit(1);
 	}
-	
+
 	//check for comments
 	c = getc(inFile);
+
+	//printf("\n%c\n", c); to check starting of comments
+
 	bool flag = true;
-	while (c!= EOF)
+	while (c != EOF)
 	{
-		if(c == '#')
+		if (c == '#')
 		{
 			flag = false;
 			while (getc(inFile) != '\n');
@@ -175,31 +182,35 @@ int main(int argc, char **argv)
 		c = getc(inFile);
 	}
 	
-	printf("%c",c);
-	
-	//ungetc(c, inFile);
+	ungetc(c, inFile);
+
+	printf("***********Contents read from the file***********************\n");
 
 	
+	//printf("%c", c);
 
-	while(true)
+	//Add index to data so that values are not overwritten
+
+	while (true && index<NUM_OF_PIXELS)
 	{
-	int ret =fscanf(inFile, "%u %u %u", &img->data->red, &img->data->green, &img->data->blue);
-	printf("%u %u %u  ", img->data->red, img->data->green, img->data->blue);
-	if (ret == EOF)
-		break;
-
+		int ret = fscanf(inFile, "%u %u %u", &img->data[index]->red, &img->data[index]->green, &img->data[index]->blue);
+		printf("%u %u %u %u ", img->data[index]->red, img->data[index]->green, img->data[index]->blue, img->data[index]->alpha);
+		if (ret == EOF)
+			break;
+		index++;
 	}
-	
-	
+
+	//int noofelements = img->x*img->y;
+
 	//Attempts to read  3* sizeof(cl_int) elements of each of which is img->x * img->y byte long(complete image)
 	//fread() returns the number of data elements it was able to read 
 	//If it reaches end-of-file (or an error condition) before reading the full img->y bytes, it indicates exactly how many bytes it read.
-	
+
 	/*
 	size_t noofelements = fread(img->data, sizeof(cl_uchar), 4*img->x * img->y, inFile);
 	printf("\nNumber of elements read: %d", noofelements);
-	
-	
+
+
 	if (noofelements != (4*img->x*img->y)) {
 		printf("\nError loading image" );
 		exit(1);
@@ -232,38 +243,37 @@ int main(int argc, char **argv)
 	}
 
 	commandQueues = clCreateCommandQueue(context, devices[0], CL_QUEUE_PROFILING_ENABLE, &errNum);
+
 	if (commandQueues == NULL)
 	{
 		error(errNum, "clCreateCommandQueue");
 	}
+
+	/* To check if clEnqueueWriteBuffer works for homogeneous data
 
 	int a[64];
 
 	for (int i = 0; i < 64; i++)
 	{
 		a[i] = rand() % 64;
-	
+
 	}
-
-
-	//errNum = clEnqueueWriteBuffer(commandQueues,buffers[0], CL_TRUE,0, img->x*img->y*sizeof(PPMPixel),img->data,0,NULL,NULL);
 
 	errNum = clEnqueueWriteBuffer(commandQueues,buffers[0], CL_TRUE,0, 64 * sizeof(cl_int),a,0,NULL,NULL);
 
 	cl_int *mapPtr = (cl_int*)clEnqueueMapBuffer(commandQueues, buffers[0], CL_TRUE, CL_MAP_WRITE, 0, 64 * sizeof(cl_int), 0, NULL, NULL, &errNum);
+	*/
 
-	//cl_uchar *mapPtr = (cl_uchar*)clEnqueueMapBuffer(commandQueues, buffers[0], CL_TRUE, CL_MAP_WRITE, 0, img->x*img->y * sizeof(PPMPixel), 0, NULL, NULL, &errNum);
-	error(errNum, "clEnqueueMapBuffer");
-
-	printf("\n***********Data from image copied to buffer***********\n\n");
+	//test code to copy data from image to buffer
+	//fillDataBuffer(img->data, buffers[0],sizeof(cl_uchar));
 	
-	for (int i = 0; i < 64; i++)
-	{
-		//printf("%u  ", mapPtr[i]);
-		printf("%d  ", mapPtr[i]);
+	for (int i=0;i<NUM_OF_PIXELS;i++)
+	{ 
+	errNum = clEnqueueWriteBuffer(commandQueues, buffers[0], CL_TRUE, (0 + i*sizeof(PPMPixel)), sizeof(PPMPixel), (void*)img->data[i], 0, NULL, NULL);
 	}
 
-	//Externally add A(alpha) component while writing data to the buffer.
+	cl_uchar *mapPtr = (cl_uchar*)clEnqueueMapBuffer(commandQueues, buffers[0], CL_TRUE, CL_MAP_READ, 0, NUM_OF_PIXELS * sizeof(PPMPixel), 0, NULL, NULL, &errNum);
+	error(errNum, "clEnqueueMapBuffer");
 
 	if (errNum != CL_SUCCESS)
 	{
@@ -271,12 +281,16 @@ int main(int argc, char **argv)
 		error(errNum, "clEnqueueWriteBuffer");
 		return 1;
 	}
-	int noofelements = img->x*img->y;
+	
+	printf("\n\n***********Data from image copied to buffer***********\n\n");
 
-	cl_int *mapPtr1 = (cl_int*)clEnqueueMapBuffer(commandQueues, buffers[1], CL_TRUE, CL_MAP_WRITE, 0, sizeof(cl_uchar)* noofelements*3, 0, NULL, NULL, &errNum);
-	error(errNum, "clEnqueueMapBuffer");
-	
-	
+	for (int i = 0; i < NUM_OF_PIXELS * sizeof(PPMPixel); i++)
+	{
+		printf("%u  ", mapPtr[i]);
+		//printf("%d  ", mapPtr[i]);
+	}
+
+		
 	//Create kernel for sobel filter
 	kernelsobel = clCreateKernel(program, "SobelDetector", &errNum);
 	if (kernelsobel == NULL)
@@ -306,7 +320,7 @@ int main(int argc, char **argv)
 	errNum = clEnqueueNDRangeKernel(commandQueues, kernelsobel, 2, NULL, &globalWorksize, &localWorksize, 0, NULL, &keventA);
 	if (errNum != CL_SUCCESS)
 	{
-		printf("Error queuing kernelsobel for execution\n");
+		//printf("Error queuing kernelsobel for execution\n");
 		error(errNum, "clEnqueueNDRangeKernel");
 		return 1;
 	}
@@ -319,8 +333,18 @@ int main(int argc, char **argv)
 
 	printf("\nThe execution time in seconds for edge detection with Sobel filter = %f secs\n", total_time*1.0e-9);
 
+	cl_uchar *mapPtr1 = (cl_uchar*)clEnqueueMapBuffer(commandQueues, buffers[1], CL_TRUE, CL_MAP_READ, 0, NUM_OF_PIXELS * sizeof(PPMPixel), 0, NULL, NULL, &errNum);
+	error(errNum, "clEnqueueMapBuffer");
 
-	errNum = clEnqueueReadBuffer(commandQueues, buffers[1], CL_TRUE, 0, noofelements, (void*)mapPtr1, 0, NULL, NULL);
+
+	errNum = clEnqueueReadBuffer(commandQueues, buffers[1], CL_TRUE, 0, NUM_OF_PIXELS, (void*)mapPtr1, 0, NULL, NULL);
+
+	for (int i = 0; i < NUM_OF_PIXELS * sizeof(PPMPixel); i++)
+	{
+		printf("%u  ", mapPtr1[i]);
+		
+	}
+
 
 	if (errNum != CL_SUCCESS)
 	{

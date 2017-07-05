@@ -10,8 +10,7 @@ __kernel void SobelDetector(__global uchar4* input,
   float4 Gy = (float4)(0);
 
     // Given that we know the (x,y) coordinates of the pixel we're 
-    // looking atits
-    // neighbouring pixels
+    // looking at its neighbouring pixels
     
 	
 	// the variables i00 through to i22 seek to identify the pixels
