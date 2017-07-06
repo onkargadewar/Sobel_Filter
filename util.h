@@ -8,7 +8,8 @@
 
 
 cl_ulong time_start, time_end;
-double total_time;
+cl_double total_time;
+
 #define CREATOR "RPFELGUEIRAS"
 #define RGB_COMPONENT_COLOR 255
 

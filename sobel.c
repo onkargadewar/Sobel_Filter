@@ -184,11 +184,9 @@ int main(int argc, char **argv)
 	
 	ungetc(c, inFile);
 
-	printf("***********Contents read from the file***********************\n");
+	printf("\n\n***********Contents read from the file***********************\n\n");
 
 	
-	//printf("%c", c);
-
 	//Add index to data so that values are not overwritten
 
 	while (true && index<NUM_OF_PIXELS)
@@ -287,7 +285,6 @@ int main(int argc, char **argv)
 	for (int i = 0; i < NUM_OF_PIXELS * sizeof(PPMPixel); i++)
 	{
 		printf("%u  ", mapPtr[i]);
-		//printf("%d  ", mapPtr[i]);
 	}
 
 		
@@ -317,7 +314,7 @@ int main(int argc, char **argv)
 	globalWorksize[0] = (img->x); globalWorksize[1] = (img->y);
 	localWorksize[0] = 1; localWorksize[1] = 1;
 		
-	errNum = clEnqueueNDRangeKernel(commandQueues, kernelsobel, 2, NULL, &globalWorksize, &localWorksize, 0, NULL, &keventA);
+	errNum = clEnqueueNDRangeKernel(commandQueues, kernelsobel, 2, NULL, globalWorksize, localWorksize, 0, NULL, &keventA);
 	if (errNum != CL_SUCCESS)
 	{
 		//printf("Error queuing kernelsobel for execution\n");
@@ -331,20 +328,12 @@ int main(int argc, char **argv)
 	errNum = clGetEventProfilingInfo(keventA, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &time_end, NULL);
 	total_time = (double)(time_end - time_start);
 
-	printf("\nThe execution time in seconds for edge detection with Sobel filter = %f secs\n", total_time*1.0e-9);
+	printf("\n\nThe execution time in seconds for edge detection with Sobel filter = %f secs\n\n", total_time*1.0e-9);
 
 	cl_uchar *mapPtr1 = (cl_uchar*)clEnqueueMapBuffer(commandQueues, buffers[1], CL_TRUE, CL_MAP_READ, 0, NUM_OF_PIXELS * sizeof(PPMPixel), 0, NULL, NULL, &errNum);
 	error(errNum, "clEnqueueMapBuffer");
-
-
-	errNum = clEnqueueReadBuffer(commandQueues, buffers[1], CL_TRUE, 0, NUM_OF_PIXELS, (void*)mapPtr1, 0, NULL, NULL);
-
-	for (int i = 0; i < NUM_OF_PIXELS * sizeof(PPMPixel); i++)
-	{
-		printf("%u  ", mapPtr1[i]);
-		
-	}
-
+	
+	errNum = clEnqueueReadBuffer(commandQueues, buffers[1], CL_TRUE, 0, NUM_OF_PIXELS*sizeof(PPMPixel), (void*)mapPtr1, 0, NULL, NULL);
 
 	if (errNum != CL_SUCCESS)
 	{
@@ -352,6 +341,17 @@ int main(int argc, char **argv)
 		error(errNum, "clEnqueueReadBuffer");
 		return 1;
 	}
+	
+
+	printf("\n\n***********Processed data from image copied to output buffer***********\n\n");
+
+	for (int i = 0; i < NUM_OF_PIXELS * sizeof(PPMPixel); i++)
+	{
+		printf("%u  ", mapPtr1[i]);
+		
+	}
+
+	
 
 
 }
